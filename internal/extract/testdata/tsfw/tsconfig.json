@@ -1,0 +1,1 @@
+{ "compilerOptions": { "jsx": "preserve", "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "strict": false, "allowJs": true }, "include": ["src"] }

@@ -1,0 +1,62 @@
+name: Codumi pull request map
+description: Comments on each pull request what the change reaches (callers, API routes, pages, tables, tests) and the audit findings in the changed files.
+branding:
+  icon: git-pull-request
+  color: green
+inputs:
+  fail-on:
+    description: Fail the check when the pull request brings an audit finding at this level (high, medium, low). Empty never fails.
+    default: ""
+  lang:
+    description: Comment language (en or pt)
+    default: en
+  github-token:
+    description: Token to write the comment
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache-dependency-path: ${{ github.action_path }}/go.sum
+    - name: Build Codumi
+      shell: bash
+      run: cd "$GITHUB_ACTION_PATH" && go build -o "$RUNNER_TEMP/codumi" .
+    - name: TypeScript for the map
+      shell: bash
+      run: |
+        if [ -f package.json ] && [ ! -d node_modules/typescript ] && command -v npm >/dev/null; then
+          npm i --prefix "$RUNNER_TEMP/ts" --no-audit --no-fund --silent typescript
+          echo "CODUMI_TYPESCRIPT=$RUNNER_TEMP/ts/node_modules/typescript" >> "$GITHUB_ENV"
+        fi
+    - name: Map the pull request
+      id: map
+      shell: bash
+      env:
+        BASE: ${{ github.event.pull_request.base.sha }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        LANG_IN: ${{ inputs.lang }}
+      run: |
+        set +e
+        "$RUNNER_TEMP/codumi" pr --base="$BASE" --lang="$LANG_IN" --fail-on="$FAIL_ON" > "$RUNNER_TEMP/codumi.md"
+        echo "code=$?" >> "$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/codumi.md" >> "$GITHUB_STEP_SUMMARY"
+    - name: Comment
+      if: github.event.pull_request.number
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |
+        # atualiza o comentário do Codumi em vez de empilhar um novo a cada push
+        id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- codumi-pr -->")) | .id' | head -1)
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$id" -F body=@"$RUNNER_TEMP/codumi.md" >/dev/null
+        else
+          gh api -X POST "repos/$REPO/issues/$PR/comments" -F body=@"$RUNNER_TEMP/codumi.md" >/dev/null
+        fi
+    - name: Result
+      shell: bash
+      run: exit ${{ steps.map.outputs.code }}

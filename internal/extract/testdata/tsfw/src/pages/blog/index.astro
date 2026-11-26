@@ -1,0 +1,6 @@
+---
+import Botao from '../../lib/Botao.svelte';
+import { formatar } from '../../lib/api';
+const total = formatar(10);
+---
+<html><body><Botao texto={total} client:load /></body></html>

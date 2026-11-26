@@ -1,0 +1,7 @@
+model Pedido {
+  id Int @id
+  @@map("pedidos")
+}
+model Cliente {
+  id Int @id
+}

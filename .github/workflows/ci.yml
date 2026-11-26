@@ -1,0 +1,23 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: npm i --no-audit --no-fund
+        working-directory: examples/demo
+      - run: go vet ./...
+      - run: go test ./...

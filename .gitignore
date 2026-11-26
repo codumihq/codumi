@@ -1,0 +1,6 @@
+/codumi
+node_modules/
+*.db
+*.db.tmp
+__pycache__/
+.DS_Store

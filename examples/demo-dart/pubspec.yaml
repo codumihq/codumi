@@ -1,0 +1,5 @@
+name: demo_dart
+description: A tiny Dart app used to test codumi (Supabase stand-ins, API calls).
+publish_to: none
+environment:
+  sdk: ^3.5.0

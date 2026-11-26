@@ -1,0 +1,3 @@
+# rotas
+GET     /pedidos          controllers.Pedidos.index()
+POST    /pedidos/:id      controllers.Pedidos.salvar(id: Long)
